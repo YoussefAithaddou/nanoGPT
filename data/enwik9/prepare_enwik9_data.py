@@ -34,6 +34,12 @@ print(f"Length of cleaned dataset in characters: {len(clean_data):,}")
 
 # Get all unique characters
 chars = sorted(list(set(clean_data)))
+if '\n' not in chars:
+    chars.append('\n')  # Adding newlines are in the vocabulary
+chars = sorted(chars)
+
+
+
 vocab_size = len(chars)
 print(f"Unique characters: {''.join(chars)}")
 print(f"Vocab size: {vocab_size:,}")
