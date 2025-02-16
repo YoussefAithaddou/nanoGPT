@@ -223,7 +223,7 @@ def estimate_loss():
             with ctx:
                 logits, loss = model(X, Y)
             losses[k] = loss.item()
-        out[split] = losses.mean()
+        out[split] = losses.mean()/np.log(2)
     model.train()
     return out
 
@@ -263,7 +263,7 @@ while True:
     if iter_num % eval_interval == 0 and master_process:
         losses = estimate_loss()
         if iter_num % 200 == 0 and iter_num > 1:
-          print(f"step {iter_num}: train loss {losses['train'] / np.log(2):.4f}, val loss {losses['val'] / np.log(2):.4f}")
+          print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val'] :.4f}")
         if wandb_log:
             wandb.log({
                 "iter": iter_num,
@@ -299,6 +299,7 @@ while True:
             model.require_backward_grad_sync = (micro_step == gradient_accumulation_steps - 1)
         with ctx:
             logits, loss = model(X, Y)
+            loss = loss/np.log(2)
             loss = loss / gradient_accumulation_steps # scale the loss to account for gradient accumulation
         # immediately async prefetch next batch while model is doing the forward pass on the GPU
         X, Y = get_batch('train')
@@ -326,7 +327,7 @@ while True:
             mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
             running_mfu = mfu if running_mfu == -1.0 else 0.9*running_mfu + 0.1*mfu
         if iter_num % 200 == 0 and iter_num > 1:
-           print(f"iter {iter_num}: loss {lossf / np.log(2):.4f}, time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
+           print(f"iter {iter_num}: loss {lossf:.4f}, time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
     iter_num += 1
     local_iter_num += 1
 
